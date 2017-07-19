@@ -1,5 +1,6 @@
 import Tkinter as tk
 from tkFileDialog import askopenfilename
+from PIL import Image, ImageTk
 from test2 import run
 
 # Global variable
@@ -8,7 +9,8 @@ counter = 0
 def openfile():
    filename = askopenfilename(parent=root)
    lblText.config(text=filename)
-   run(filename)
+   if len(filename) != 0:
+       run(filename)
    
 def openAbout():
     global counter
@@ -23,12 +25,28 @@ root = tk.Tk()
 root.wm_title("Hello, world")
 lblText = tk.Label(root, text = "test")
 lblText.pack()
+
+# Make image button
+imBrowse = PhotoImage(file="res/browse.gif")
+timBrowse = imBrowse.subsample(5,5)
+imKey = PhotoImage(file="res/key.gif")
+timKey = imKey.subsample(5,5)
+imExport = PhotoImage(file="res/export.gif")
+timExport = imExport.subsample(5,5)
+imAbout = PhotoImage(file="res/about.gif")
+timAbout = imAbout.subsample(5,5)
+
+
 btnBrowse = tk.Button(root, text="Browse", command = openfile)
+btnBrowse.config(image = timBrowse, compound = TOP)
 btnBrowse.pack(side = tk.LEFT, padx=5, pady = 5)
 btnKeyframe = tk.Button(root, text="Keyframe")
+btnKeyframe.config(image = timKey, compound = TOP)
 btnKeyframe.pack(side = tk.LEFT, padx=5, pady = 5)
 btnExport = tk.Button(root, text="Export")
+btnExport.config(image = timExport, compound = TOP)
 btnExport.pack(side = tk.LEFT, padx=5, pady = 5)
 btnAbout = tk.Button(root, text="About", command = openAbout)
+btnAbout.config(image = timAbout, compound = TOP)
 btnAbout.pack(side = tk.RIGHT, padx=5, pady = 5)
 root.mainloop()
