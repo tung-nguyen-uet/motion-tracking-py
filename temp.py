@@ -1,4 +1,5 @@
 import Tkinter as tk
+from Tkinter import *
 from tkFileDialog import askopenfilename
 from PIL import Image, ImageTk
 from test2 import run
@@ -7,9 +8,9 @@ from test2 import run
 counter = 0
 
 def openfile():
-   filename = askopenfilename(parent=root)
-   lblText.config(text=filename)
+   filename = askopenfilename(parent=root)   
    if len(filename) != 0:
+       print filename
        run(filename)
    
 def openAbout():
@@ -23,8 +24,6 @@ def openAbout():
 # Main
 root = tk.Tk()
 root.wm_title("Hello, world")
-lblText = tk.Label(root, text = "test")
-lblText.pack()
 
 # Make image button
 imBrowse = PhotoImage(file="res/browse.gif")
