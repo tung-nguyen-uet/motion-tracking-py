@@ -49,35 +49,60 @@ def gen_colors():
 	return colors
 
 #Read skeleton file
-def readSkeleton(filename):
+def readSkeleton(filename,  numOfFrame, width, height):
 	ske = []
-	f = open(filename, 'r')
-	lines = f.readlines()
-	f.close()
-	for line in lines:
-		one_ske = []
-		for l in line.split(';'):
-			x, y = [int(i) for i in l.split()]
-			one_ske.append((x,y))
-		#Maps Deepcut skeleton to hetpin's skeleton
-		tmp = []
-		tmp.append(one_ske[13])
-		tmp.append(one_ske[12])
-		tmp.append(one_ske[8])
-		tmp.append(one_ske[9])
-		tmp.append(one_ske[2])
-		tmp.append(one_ske[3])
-		tmp.append(one_ske[7])
-		tmp.append(one_ske[6])
-		tmp.append(one_ske[10])
-		tmp.append(one_ske[11])
-		tmp.append(one_ske[1])
-		tmp.append(one_ske[0])
-		tmp.append(one_ske[4])
-		tmp.append(one_ske[5])
-		ske.append(tmp)
+	try:
+		f = open(filename, 'r')
+	   	lines = f.readlines()
+		f.close()
+		for line in lines:
+			one_ske = []
+			for l in line.split(';'):
+				x, y = [int(i) for i in l.split()]
+				one_ske.append((x,y))
+			#Maps Deepcut skeleton to hetpin's skeleton
+			tmp = []
+			tmp.append(one_ske[13])
+			tmp.append(one_ske[12])
+			tmp.append(one_ske[8])
+			tmp.append(one_ske[9])
+			tmp.append(one_ske[2])
+			tmp.append(one_ske[3])
+			tmp.append(one_ske[7])
+			tmp.append(one_ske[6])
+			tmp.append(one_ske[10])
+			tmp.append(one_ske[11])
+			tmp.append(one_ske[1])
+			tmp.append(one_ske[0])
+			tmp.append(one_ske[4])
+			tmp.append(one_ske[5])
+			ske.append(tmp)
+	except Exception,e:
+		print e		
 	return ske
 
+# initialize skeleton
+def initializeSke(numOfFrame):
+    skeleton = []
+    singleSke = []
+    singleSke.append((50,70))
+    singleSke.append((50,60))
+    singleSke.append((60,20))
+    singleSke.append((70,20))
+    singleSke.append((30,20))
+    singleSke.append((50,20))
+    singleSke.append((10,20))
+    singleSke.append((20,20))
+    singleSke.append((30,60))
+    singleSke.append((30,70))
+    singleSke.append((40,20))
+    singleSke.append((40,10))
+    singleSke.append((30,50))
+    singleSke.append((50,50))    
+    for x in range(1, numOfFrame):
+        skeleton.append(singleSke)
+    return skeleton
+    
 #Read lookup table
 def readLookupTable(filename):
 	table = []
@@ -113,7 +138,7 @@ def draw_skeleton(inputframe, one_ske, table):
 
 def checkNearby(m, one_ske):# m, r, p stands for mouse, radius, point (joint)
 	#print "Checking ", m
-	r = 20
+	r = 10
 	k = 0 #for index of joint
 	for p in one_ske:
 		#print p , m
@@ -139,12 +164,31 @@ def click_and_drag(event, x, y, flags, param):
 			if k >= 0:
 				ske[i][k] = (x,y)
 			else:
-				moving = False
+				moving = False			
 			#draw
-			draw_skeleton(obj[i-1], ske[i-1], table)
+			draw_skeleton(frame, ske[i], table)
 	if event == cv2.EVENT_LBUTTONUP:
 		moving = False
 
+# Save skeleton to file
+def saveSkeleton(ske, filename):
+    outFile = open(filename,'w')
+    for x in range(0, len(ske)):
+        outFile.write(str(ske[x][11][0])+' '+str(ske[x][11][1])+';')
+        outFile.write(str(ske[x][10][0])+' '+str(ske[x][10][1])+';')
+        outFile.write(str(ske[x][4][0])+' '+str(ske[x][4][1])+';')
+        outFile.write(str(ske[x][5][0])+' '+str(ske[x][5][1])+';')
+        outFile.write(str(ske[x][12][0])+' '+str(ske[x][12][1])+';')
+        outFile.write(str(ske[x][13][0])+' '+str(ske[x][13][1])+';')
+        outFile.write(str(ske[x][7][0])+' '+str(ske[x][7][1])+';')
+        outFile.write(str(ske[x][6][0])+' '+str(ske[x][6][1])+';')
+        outFile.write(str(ske[x][2][0])+' '+str(ske[x][2][1])+';')
+        outFile.write(str(ske[x][3][0])+' '+str(ske[x][3][1])+';')
+        outFile.write(str(ske[x][8][0])+' '+str(ske[x][8][1])+';')
+        outFile.write(str(ske[x][9][0])+' '+str(ske[x][9][1])+';')
+        outFile.write(str(ske[x][1][0])+' '+str(ske[x][1][1])+';')
+        outFile.write(str(ske[x][0][0])+' '+str(ske[x][0][1])+'\n')        
+    outFile.close() 
 #==================MAIN=========================
 #MAIN LOOP
 cv2.namedWindow('frame')
@@ -157,30 +201,39 @@ thickness = 10
 joint_r = 5
 colors = gen_colors()
 #------------------EndOfSkeletonStyle-----------
-ske = readSkeleton("test2d.skeleton") # Read the stored skeleton
+vid = cv2.VideoCapture('D:/tungnb/Aniage/motion-tracking-py/dance.mp4')
+numOfFrame = int(vid.get(cv2.CAP_PROP_FRAME_COUNT)) #Number of frames
+width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = int(vid.get(cv2.CAP_PROP_FPS))
+ske = readSkeleton("dance.skeleton", numOfFrame, width, height)# Read the stored skeleton
 #Define skeleton lookup table
 table = readLookupTable("lookup.skeleton")
-obj, fps, width, height = readVid('D:/tungnb/Aniage/motion-tracking-py/dance.mp4')
-numOfFrame = len(obj)
-i = 1;
+i = 0;
 isPlay = False
 
-try:
-    while(i < numOfFrame):        
-        draw_skeleton(obj[i], ske[i], table)
-        isPlay = True
-        i = i + 1
-        k = cv2.waitKey(1000/fps) & 0xFF
-        controller = cv2.waitKey(1) & 0xFF
-        
-        if controller == ord('q'):
-            break
-        if controller == ord('p'):
-            print 'pause'
-            isPlay = False
-            cv2.waitKey(0)
-except Exception,e: 
-    print e
-    cv2.destroyAllWindows()
+while(vid.isOpened()):
+    if cv2.waitKey(1) & 0xFF == ord('p'):
+        print 'pause'
+        isPlay = False
+        cv2.waitKey(0)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break        
+    ret, frame = vid.read()
+    if len(ske) == 0:
+        ske = initializeSke(numOfFrame)
+        draw_skeleton(frame, ske[0], table)
+        cv2.waitKey(0)    
+    try:
+        draw_skeleton(frame, ske[i], table)
+    except Exception, e:
+        print len(ske), i, numOfFrame
+        break
+    isPlay = True
+    i = i + 1
+    k = cv2.waitKey(1000/fps) & 0xFF    
+#write skeleton to file
+saveSkeleton(ske, 'dance.skeleton')    
+vid.release()
 cv2.destroyAllWindows()
 #==================END===========================
