@@ -1,42 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jul 28 07:32:15 2017
+Created on Tue Aug 15 03:53:33 2017
 
 @author: tungnb
-"""
-import numpy as np
-import time
-import sys
-import cv2 
 
-def readVid(namevid):
-    #objective:get frames from video
-    #input:path of video
-    #output:frames of video,frames per second,width of video,height of video
-    vid = cv2.VideoCapture(namevid)
-    num_f = int(vid.get(cv2.CAP_PROP_FRAME_COUNT)) #Number of frames
-    width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(vid.get(cv2.CAP_PROP_FPS))
-    obj = []
-    t = time.time() ###
-    print ""  ###
-    sys.stdout.write("reading video ... 0%") ###
-    for i in range(num_f):
-        ret, frame = vid.read()
-        if ret == False:
-            break
-        obj.append(frame)
-        if time.time()-t>1: ###
-            a=np.ceil(i*100*1.0/(num_f-1)) ###
-            b = ("reading video ... " + "%d"%a+"%") ###
-            sys.stdout.write('\r'+b) ###
-            t=time.time() ###
-    sys.stdout.write('\r'+"reading video ... 100%") ### 
-    print "" ###
-    time.sleep(1) ###
-    vid.release()
-    return obj, fps, width, height
+Manually draw 2D skeleton
+"""
+import cv2
 
 #Gen 14 different colors for 14 edges
 def gen_colors():
@@ -47,6 +17,29 @@ def gen_colors():
 			for k in range(0,4):
 				colors.append((delta*i, delta*j, delta *k))
 	return colors
+
+#Draw skeleton
+def draw_skeleton(inputframe, one_ske, table):
+	draw_frame = inputframe.copy()
+	i = 0	
+	# compute the middle of the hip
+	centerHipY = (one_ske[4][0]+one_ske[5][0])/2
+	centerHipX = (one_ske[4][1]+one_ske[5][1])/2
+	centerHip = (centerHipY, centerHipX)
+	cv2.line(draw_frame, one_ske[1], centerHip, blue, thickness)
+
+	for xy in table:
+		cv2.line(draw_frame, one_ske[xy[0]], one_ske[xy[1]], colors[i], thickness)        
+		#draw joints
+		cv2.circle(draw_frame, one_ske[xy[0]], joint_r, green, 2)
+		cv2.circle(draw_frame, one_ske[xy[1]], joint_r, green, 2)
+		i = i + 1
+	cv2.imshow('frame',draw_frame)	
+	return draw_frame
+
+def resizewh(input):
+    roi = frame[450:, 200:]
+    return roi
 
 #Read skeleton file
 def readSkeleton(filename,  numOfFrame, width, height):
@@ -116,29 +109,10 @@ def readLookupTable(filename):
 		y = y -1
 		table.append((x,y))
 	return table
-        
-#Draw skeleton
-def draw_skeleton(inputframe, one_ske, table):
-	draw_frame = inputframe.copy()
-	i = 0	
-	# compute the middle of the hip
-	centerHipY = (one_ske[4][0]+one_ske[5][0])/2
-	centerHipX = (one_ske[4][1]+one_ske[5][1])/2
-	centerHip = (centerHipY, centerHipX)
-	cv2.line(draw_frame, one_ske[1], centerHip, blue, thickness)
-
-	for xy in table:
-		cv2.line(draw_frame, one_ske[xy[0]], one_ske[xy[1]], colors[i], thickness)        
-		#draw joints
-		cv2.circle(draw_frame, one_ske[xy[0]], joint_r, green, 2)
-		cv2.circle(draw_frame, one_ske[xy[1]], joint_r, green, 2)
-		i = i + 1
-	cv2.imshow('frame',draw_frame)	
-	return draw_frame
 
 def checkNearby(m, one_ske):# m, r, p stands for mouse, radius, point (joint)
 	#print "Checking ", m
-	r = 10
+	r = 20
 	k = 0 #for index of joint
 	for p in one_ske:
 		#print p , m
@@ -162,11 +136,11 @@ def click_and_drag(event, x, y, flags, param):
 			#update moving joint
 			k = checkNearby((x,y), ske[i])
 			if k >= 0:
-				ske[i][k] = (x,y)
+				ske[i][k] = (x,y)				
 			else:
 				moving = False			
 			#draw
-			draw_skeleton(resizedFrame, ske[i], table)
+			draw_skeleton(resizewh(frame), ske[i], table)
 	if event == cv2.EVENT_LBUTTONUP:
 		moving = False
 
@@ -188,8 +162,7 @@ def saveSkeleton(ske, filename):
         outFile.write(str(ske[x][9][0])+' '+str(ske[x][9][1])+';')
         outFile.write(str(ske[x][1][0])+' '+str(ske[x][1][1])+';')
         outFile.write(str(ske[x][0][0])+' '+str(ske[x][0][1])+'\n')        
-    outFile.close() 
-#==================MAIN=========================
+    outFile.close()         
 #MAIN LOOP
 cv2.namedWindow('frame')
 cv2.setMouseCallback('frame',click_and_drag)
@@ -201,50 +174,35 @@ thickness = 10
 joint_r = 5
 colors = gen_colors()
 #------------------EndOfSkeletonStyle-----------
-#------------------Golbal----
-resizedFrame = []
-ske = []
-table = []
-i = 0;
 
-def run(filename):
-    vid = cv2.VideoCapture('D:/tungnb/Aniage/motion-tracking-py/00049.mts')
-    numOfFrame = int(vid.get(cv2.CAP_PROP_FRAME_COUNT)) #Number of frames
-    width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(vid.get(cv2.CAP_PROP_FPS))
-    ske = readSkeleton("cheo.skeleton", numOfFrame, width, height)# Read the stored skeleton
-    #Define skeleton lookup table
-    table = readLookupTable("lookup.skeleton")
-    i = 0;
-    isPlay = False
-    
-    ratio = 1
-    if width > 600:
-        ratio = 600.0/width
-    
-    while(vid.isOpened()):
-        if cv2.waitKey(1) & 0xFF == ord('p'):
-            print 'pause'
-            isPlay = False
-            cv2.waitKey(0)
+cap = cv2.VideoCapture('D:/tungnb/Aniage/motion-tracking-py/00049.mts')
+numOfFrame = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) #Number of frames
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+table = readLookupTable("lookup.skeleton")
+ske = readSkeleton("muagiday.skeleton", numOfFrame, width, height)# Read the stored skeleton
+
+ret, frame = cap.read()
+ratio = 1
+if width > 800:
+    ratio = 800.0/width
+draw_skeleton(cv2.resize(frame, (0,0), fx=ratio, fy=ratio) , ske[0], table)
+
+i = 0
+try:
+    while(cap.isOpened()):
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            break        
-        ret, frame = vid.read()
-        resizedFrame = cv2.resize(frame, (0,0), fx=ratio, fy=ratio) 
-        if len(ske) == 0:
-            ske = initializeSke(numOfFrame)
-            draw_skeleton(resizedFrame, ske[0], table)
-            cv2.waitKey(0)    
-        try:
-            draw_skeleton(resizedFrame, ske[i], table)
-        except Exception, e:
-            print e
             break
-        isPlay = True
-        i = i + 1    
-    #write skeleton to file
-    #saveSkeleton(ske, 'dance.skeleton')    
-    vid.release()
-    cv2.destroyAllWindows()
-#==================END===========================
+        if cv2.waitKey(1) & 0xFF == ord('n'):
+            ret, frame = cap.read()
+            draw_skeleton(cv2.resize(frame, (0,0), fx=ratio, fy=ratio) , ske[i], table)
+            i = i + 1
+            #ske[i]=ske[i-1][:]
+except Exception,e:
+    print e
+#write skeleton to file
+saveSkeleton(ske, 'cheo.skeleton')
+cap.release()
+cv2.destroyAllWindows()

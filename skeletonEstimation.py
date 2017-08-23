@@ -150,7 +150,7 @@ def checkNearby(m, one_ske):# m, r, p stands for mouse, radius, point (joint)
 #Drag function
 moving = False
 def click_and_drag(event, x, y, flags, param):
-	global moving
+	global moving, i, resizedFrame, ske, table
 	if event == cv2.EVENT_LBUTTONDOWN:
 		#Check click nearby joint with radius of r pixcels
 		if checkNearby((x,y), ske[i]) >= 0:
@@ -191,8 +191,6 @@ def saveSkeleton(ske, filename):
     outFile.close() 
 #==================MAIN=========================
 #MAIN LOOP
-cv2.namedWindow('frame')
-cv2.setMouseCallback('frame',click_and_drag)
 #------------------Skeleton-style---------------
 red = (0, 0, 255)
 green = (0, 255, 0)
@@ -208,6 +206,9 @@ table = []
 i = 0;
 
 def run(filename):
+    global resizedFrame, i, ske, table
+    cv2.namedWindow('frame')
+    cv2.setMouseCallback('frame',click_and_drag)
     vid = cv2.VideoCapture('D:/tungnb/Aniage/motion-tracking-py/00049.mts')
     numOfFrame = int(vid.get(cv2.CAP_PROP_FRAME_COUNT)) #Number of frames
     width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
